@@ -1,0 +1,134 @@
+# Minimal K3s deployment. Replace IMAGE_URI with the image pushed to Amazon ECR.
+apiVersion: v1
+kind: Namespace
+metadata: {name: edumesh}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: edumesh-config, namespace: edumesh}
+data:
+  ML_URL: http://ml:8000
+  DBMS_URL: http://dbms:8000
+  CLOUD_URL: http://cloud:8000
+  ANSWER_MODE: groq
+  MODEL_NAME: openai/gpt-oss-20b
+  AWS_REGION: ap-south-1
+  TRANSCRIBE_LAMBDA_FUNCTION: edumesh-transcribe
+  GROQ_API_KEY_PARAMETER: /edumesh/groq-api-key
+  DEEPGRAM_API_KEY_PARAMETER: /edumesh/deepgram-api-key
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: edumesh-runtime, namespace: edumesh}
+imagePullSecrets: [{name: ecr-regcred}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: gateway, namespace: edumesh}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: gateway}}
+  template:
+    metadata: {labels: {app: gateway}}
+    spec:
+      serviceAccountName: edumesh-runtime
+      containers:
+        - name: gateway
+          image: IMAGE_URI
+          command: ["python", "-m", "uvicorn", "gateway:app", "--host", "0.0.0.0", "--port", "8000"]
+          ports: [{containerPort: 8000}]
+          envFrom: [{configMapRef: {name: edumesh-config}}]
+          resources: {requests: {cpu: 50m, memory: 128Mi}, limits: {cpu: 250m, memory: 256Mi}}
+          livenessProbe: {httpGet: {path: /live, port: 8000}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: ml, namespace: edumesh}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: ml}}
+  template:
+    metadata: {labels: {app: ml}}
+    spec:
+      serviceAccountName: edumesh-runtime
+      containers:
+        - name: ml
+          image: IMAGE_URI
+          command: ["python", "-m", "uvicorn", "service:app", "--host", "0.0.0.0", "--port", "8000"]
+          env: [{name: SUBJECT, value: ML}]
+          envFrom: [{configMapRef: {name: edumesh-config}}]
+          ports: [{containerPort: 8000}]
+          resources: {requests: {cpu: 50m, memory: 128Mi}, limits: {cpu: 250m, memory: 256Mi}}
+          livenessProbe: {httpGet: {path: /health, port: 8000}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: dbms, namespace: edumesh}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: dbms}}
+  template:
+    metadata: {labels: {app: dbms}}
+    spec:
+      serviceAccountName: edumesh-runtime
+      containers:
+        - name: dbms
+          image: IMAGE_URI
+          command: ["python", "-m", "uvicorn", "service:app", "--host", "0.0.0.0", "--port", "8000"]
+          env: [{name: SUBJECT, value: DBMS}]
+          envFrom: [{configMapRef: {name: edumesh-config}}]
+          ports: [{containerPort: 8000}]
+          resources: {requests: {cpu: 50m, memory: 128Mi}, limits: {cpu: 250m, memory: 256Mi}}
+          livenessProbe: {httpGet: {path: /health, port: 8000}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: cloud, namespace: edumesh}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: cloud}}
+  template:
+    metadata: {labels: {app: cloud}}
+    spec:
+      serviceAccountName: edumesh-runtime
+      containers:
+        - name: cloud
+          image: IMAGE_URI
+          command: ["python", "-m", "uvicorn", "service:app", "--host", "0.0.0.0", "--port", "8000"]
+          env: [{name: SUBJECT, value: CLOUD}]
+          envFrom: [{configMapRef: {name: edumesh-config}}]
+          ports: [{containerPort: 8000}]
+          resources: {requests: {cpu: 50m, memory: 128Mi}, limits: {cpu: 250m, memory: 256Mi}}
+          livenessProbe: {httpGet: {path: /health, port: 8000}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: gateway, namespace: edumesh}
+spec: {selector: {app: gateway}, ports: [{port: 80, targetPort: 8000}]}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: ml, namespace: edumesh}
+spec: {selector: {app: ml}, ports: [{port: 8000, targetPort: 8000}]}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: dbms, namespace: edumesh}
+spec: {selector: {app: dbms}, ports: [{port: 8000, targetPort: 8000}]}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: cloud, namespace: edumesh}
+spec: {selector: {app: cloud}, ports: [{port: 8000, targetPort: 8000}]}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: {name: edumesh, namespace: edumesh}
+spec:
+  ingressClassName: traefik
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: {service: {name: gateway, port: {number: 80}}}
