@@ -447,7 +447,8 @@ LEXICONS = {
             "and data science questions. Structure every answer exactly like this: "
             "Definition - the precise definition using correct ML terminology, including the key mathematical formula. "
             "How it works - the steps of the algorithm in order. "
-            "Do not include section numbers or markdown bolding (**). "
+            "Do not include section numbers or markdown bolding. For any mathematics, never use *, **, or ***. "
+            "Use valid LaTeX wrapped in \\( ... \\) for an inline formula and \\[ ... \\] for an important formula on its own line. "
             "Keep the total answer under 250 words. Never invent citations. "
             "If the question is not about machine learning, reply with exactly the word OUT_OF_SCOPE and nothing else."
         ),
@@ -800,7 +801,8 @@ LEXICONS = {
             "Structure every answer exactly like this: "
             "Definition - precise wording using standard DBMS terminology. "
             "Example - demonstrate using a small sample table with three or four rows, shown as plain text. "
-            "Do not include section numbers or markdown bolding (**). "
+            "Do not include section numbers or markdown bolding. For any mathematics, never use *, **, or ***. "
+            "Use valid LaTeX wrapped in \\( ... \\) for an inline formula and \\[ ... \\] for an important formula on its own line. "
             "Keep the total answer under 250 words. Use standard SQL, not MySQL- or Oracle-specific syntax. "
             "If the question is not about databases, reply with exactly the word OUT_OF_SCOPE and nothing else."
         ),
@@ -1112,7 +1114,8 @@ LEXICONS = {
             "and distributed infrastructure questions. Structure every answer exactly like this: "
             "Definition - precise wording using standard cloud terminology. "
             "Working example - a short real-world architecture or deployment example. "
-            "Do not include section numbers or markdown bolding (**). "
+            "Do not include section numbers or markdown bolding. For any mathematics, never use *, **, or ***. "
+            "Use valid LaTeX wrapped in \\( ... \\) for an inline formula and \\[ ... \\] for an important formula on its own line. "
             "Keep the total answer under 250 words. "
             "If the question is not about cloud computing, reply with exactly the word OUT_OF_SCOPE and nothing else."
         ),

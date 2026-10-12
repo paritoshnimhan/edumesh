@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EduMesh - Distributed Academic Query System</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
     <style>
         /* Base / Reset styles */
         * {
@@ -961,69 +963,28 @@
             });
         }
 
-        // LaTeX Math symbols to unicode map for clean math presentation
-        const latexReplacements = [
-            [/\\beta/g, 'β'],
-            [/\\theta/g, 'θ'],
-            [/\\varepsilon/g, 'ε'],
-            [/\\epsilon/g, 'ε'],
-            [/\\mathbf\{x\}/g, 'x'],
-            [/\\mathbf\{y\}/g, 'y'],
-            [/\\boldsymbol\{\\beta\}/g, 'β'],
-            [/\\boldsymbol\{\\theta\}/g, 'θ'],
-            [/\\hat\{\\beta\}/g, 'β̂'],
-            [/\\hat\{\\theta\}/g, 'θ̂'],
-            [/\\hat\{y\}/g, 'ŷ'],
-            [/\\hat\{\\mathbf\{y\}\}/g, 'ŷ'],
-            [/\\hat\{\\boldsymbol\{\\theta\}\}/g, 'θ̂'],
-            [/\\sum/g, '∑'],
-            [/\\arg\\min/g, 'argmin'],
-            [/\\min/g, 'min'],
-            [/\\max/g, 'max'],
-            [/\\top/g, 'ᵀ'],
-            [/\^\\top/g, 'ᵀ'],
-            [/\^T/g, 'ᵀ'],
-            [/_i/g, 'ᵢ'],
-            [/_0/g, '₀'],
-            [/_1/g, '₁'],
-            [/_2/g, '₂'],
-            [/_n/g, 'ₙ'],
-            [/_\{i\}/g, 'ᵢ'],
-            [/_\{0\}/g, '₀'],
-            [/_\{1\}/g, '₁'],
-            [/_\{2\}/g, '₂'],
-            [/_\{n\}/g, 'ₙ'],
-            [/\^\{-1\}/g, '⁻¹'],
-            [/\^2/g, '²'],
-            [/\^3/g, '³'],
-            [/\\cdot/g, '·'],
-            [/\\times/g, '×'],
-            [/\\approx/g, '≈'],
-            [/\\neq/g, '≠'],
-            [/\\le/g, '≤'],
-            [/\\ge/g, '≥'],
-            [/\\infty/g, '∞'],
-            [/\\partial/g, '∂'],
-            [/\\delta/g, 'δ'],
-            [/\\sigma/g, 'σ'],
-            [/\\mu/g, 'μ'],
-            [/\\pi/g, 'π'],
-            [/\\lambda/g, 'λ'],
-            [/\\alpha/g, 'α'],
-            [/\\gamma/g, 'γ'],
-            [/\\phi/g, 'φ'],
-            [/\\psi/g, 'ψ'],
-            [/\\omega/g, 'ω'],
-            [/\\rho/g, 'ρ'],
-            [/\\eta/g, 'η'],
-            [/\\tau/g, 'τ'],
-            [/\\chi/g, 'χ'],
-            [/\\nu/g, 'ν'],
-            [/\\kappa/g, 'κ'],
-            [/\\zeta/g, 'ζ'],
-        ];
+        function renderMath(latex, displayMode) {
+            if (!window.katex) {
+                return displayMode
+                    ? `<div class="math-block">${latex.trim()}</div>`
+                    : `<span class="math-inline">${latex.trim()}</span>`;
+            }
 
-        // Simple Markdown and Math code formatter
+            try {
+                return window.katex.renderToString(latex.trim(), {
+                    displayMode,
+                    throwOnError: false,
+                    strict: "ignore",
+                    trust: false
+                });
+            } catch (_) {
+                return displayMode
+                    ? `<div class="math-block">${latex.trim()}</div>`
+                    : `<span class="math-inline">${latex.trim()}</span>`;
+            }
+        }
+
+        // Escapes answer text, then renders complete LaTeX expressions safely with KaTeX.
         function formatAnswer(text) {
             // 1. Escape HTML
             let esc = text
@@ -1033,22 +994,14 @@
                 
             let formatted = esc;
 
-            // 2. Parse LaTeX block formulas \[ ... \]
+            // 2. Render LaTeX block formulas \[ ... \]
             formatted = formatted.replace(/\\\[([\s\S]*?)\\\]/g, (match, formula) => {
-                let clean = formula;
-                latexReplacements.forEach(([pattern, replacement]) => {
-                    clean = clean.replace(pattern, replacement);
-                });
-                return `<div class="math-block" style="text-align: center; margin: 15px 0; font-family: 'Times New Roman', Times, serif; font-size: 18px; font-style: italic; color: #4ade80;">${clean.trim()}</div>`;
+                return renderMath(formula, true);
             });
 
-            // 3. Parse LaTeX inline formulas \( ... \)
+            // 3. Render LaTeX inline formulas \( ... \)
             formatted = formatted.replace(/\\\(([\s\S]*?)\\\)/g, (match, formula) => {
-                let clean = formula;
-                latexReplacements.forEach(([pattern, replacement]) => {
-                    clean = clean.replace(pattern, replacement);
-                });
-                return `<span class="math-inline" style="font-family: 'Times New Roman', Times, serif; font-style: italic; font-weight: 600; color: #4ade80; padding: 0 2px;">${clean.trim()}</span>`;
+                return renderMath(formula, false);
             });
 
             // 4. Replace fenced code blocks

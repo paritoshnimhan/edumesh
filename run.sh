@@ -15,7 +15,7 @@ fi
 
 # Fallback defaults if not set
 GROQ_API_KEY=${GROQ_API_KEY:-""}
-MODEL_NAME=${MODEL_NAME:-"llama-3.3-70b-versatile"}
+MODEL_NAME=${MODEL_NAME:-"openai/gpt-oss-20b"}
 ANSWER_MODE=${ANSWER_MODE:-"groq"}
 
 export ML_URL=${ML_URL:-"http://127.0.0.1:5001"}

@@ -56,7 +56,7 @@ container + serverless project.
 
 ## Live application
 
-Open: [http://65.0.66.42](http://65.0.66.42)
+Open: [http://65.1.146.176](http://65.1.146.176)
 
 Use `http`, not `https`, at the moment. Text questions work publicly. Browser
 microphone recording needs HTTPS and a domain, so it works locally but is not
@@ -89,6 +89,7 @@ docker compose down
 | `index.html` | Website user interface. |
 | `Dockerfile` | Instructions to create the Docker image. |
 | `docker-compose.yml` | Runs all four services locally. |
+| `run.sh` | Starts the same four services directly with Python, without Docker. |
 | `k8s/app.yaml` | The complete simple Kubernetes deployment file. |
 | `lambda_transcribe.py` | AWS Lambda code for audio transcription. |
 | `transcription_client.py` | Lets the Gateway call the transcription Lambda. |
@@ -125,6 +126,24 @@ Each Kubernetes container also has CPU and memory limits. This prevents one
 subject service from using all resources on the EC2 server and affecting every
 other service. On the current small single-server deployment, very high load
 can still make answers slower because all containers share one EC2 machine.
+
+Each subject also has a Horizontal Pod Autoscaler (HPA). It normally keeps one
+ML, DBMS, and Cloud pod. If one subject's average CPU usage reaches 70%, only
+that subject can automatically grow to two pods. Its Kubernetes Service shares
+requests between the two pods. When load falls, Kubernetes returns it to one
+pod.
+
+To demonstrate that it is active, open AWS Systems Manager → Run Command and
+run these commands on `edumesh-k3s`:
+
+```bash
+sudo k3s kubectl get hpa -n edumesh
+sudo k3s kubectl top pods -n edumesh
+```
+
+The `TARGETS` value, for example `cpu: 4%/70%`, proves that HPA is reading CPU
+usage. `MINPODS 1`, `MAXPODS 2`, and `REPLICAS 1` show that the service is
+healthy at normal load and may create one extra copy when required.
 
 ### If one subject container stops
 

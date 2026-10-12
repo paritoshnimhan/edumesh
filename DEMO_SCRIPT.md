@@ -4,7 +4,7 @@ This is a simple three-person presentation. It takes about 6 to 8 minutes.
 
 ## Before the demo
 
-1. Open [http://65.0.66.42](http://65.0.66.42) using **HTTP**.
+1. Open [http://65.1.146.176](http://65.1.146.176) using **HTTP**.
 2. Keep the AWS Console or terminal ready only if the teacher asks for proof.
 3. Prepare these example questions:
    - `Explain supervised learning in machine learning.`
@@ -56,8 +56,37 @@ Say:
 > created a new healthy ML pod in around 12 seconds. So one failed subject
 > container does not stop the complete project.
 
+Then say:
+
+> We also added automatic scaling for load. ML, DBMS, and Cloud each normally
+> have one pod. Kubernetes checks their CPU separately. If one subject reaches
+> 70 percent CPU, only that subject can automatically increase to two pods.
+> Kubernetes then shares that subject's requests between its two pods.
+
 Show `k8s/app.yaml` and point out that it is kept in one file to make the
-deployment easy to understand.
+deployment easy to understand. Point out `minReplicas: 1`, `maxReplicas: 2`,
+and `averageUtilization: 70` in the HPA section.
+
+### Optional live proof of automatic scaling
+
+Open AWS **Systems Manager** → **Run Command** → **AWS-RunShellScript**.
+Select the `edumesh-k3s` EC2 instance and run:
+
+```bash
+sudo k3s kubectl get hpa -n edumesh
+sudo k3s kubectl top pods -n edumesh
+```
+
+Show the `TARGETS` column. For example, `cpu: 4%/70%` means Kubernetes is
+measuring the service, its current CPU use is 4 percent, and it will add a
+second pod only if it reaches 70 percent. The `MINPODS 1` and `MAXPODS 2`
+columns prove the allowed automatic range.
+
+Say:
+
+> At the moment the services are not overloaded, so Kubernetes correctly keeps
+> one pod for each subject. The autoscaler is active and ready. When a specific
+> subject crosses 70 percent CPU, it alone can scale to two pods.
 
 ## Person 3 — AWS and serverless part (about 2 minutes)
 
@@ -95,6 +124,19 @@ End with:
 
 > Kubernetes restarts ML automatically. Until it is ready, the Gateway can
 > still ask DBMS and Cloud.
+
+**How do you handle an overloaded subject?**
+
+> Kubernetes HPA watches ML, DBMS, and Cloud separately. When one subject uses
+> 70 percent CPU, only that subject can automatically grow from one to two
+> pods. The internal Kubernetes Service distributes its requests between them.
+
+**Do you use an AWS Load Balancer?**
+
+> Not for this small assignment. We have one EC2 machine, so an AWS Load
+> Balancer would have only one server to send traffic to. Kubernetes Services
+> already distribute requests between replicas inside this server. A production
+> version with multiple EC2 machines would add an AWS Load Balancer.
 
 **Why use Parameter Store?**
 

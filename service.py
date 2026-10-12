@@ -174,7 +174,7 @@ def answer(payload: AnswerRequest):
     
     if answer_mode == "groq":
         groq_api_key, _ = provider_keys()
-        model_name = os.environ.get("MODEL_NAME", "llama-3.3-70b-versatile")
+        model_name = os.environ.get("MODEL_NAME", "openai/gpt-oss-20b")
         
         if not groq_api_key:
             # Missing key, fallback to error source
