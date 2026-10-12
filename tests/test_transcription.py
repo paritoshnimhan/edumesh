@@ -8,7 +8,10 @@ from lambda_transcribe import handler, transcribe, MAX_AUDIO_BYTES
 
 
 class TranscriptionTests(unittest.TestCase):
+    """Safety tests for audio size checks, provider fallback, and AWS Parameter Store lookup."""
+
     def test_invalid_uploads_never_call_provider(self):
+        """Bad or oversized audio must be rejected before any paid API is contacted."""
         with patch("lambda_transcribe.transcribe") as provider:
             for value in ("", "!bad!", "a" * (MAX_AUDIO_BYTES * 2)):
                 with self.assertRaises(ValueError):
@@ -16,12 +19,14 @@ class TranscriptionTests(unittest.TestCase):
             provider.assert_not_called()
 
     def test_decodes_audio(self):
+        """A valid base64 request should reach the transcription helper as raw bytes."""
         with patch("lambda_transcribe.transcribe", return_value={"text": "hello"}) as provider:
             self.assertEqual(handler({"audio_base64": base64.b64encode(b"audio").decode()}, None),
                              {"text": "hello"})
             provider.assert_called_once_with(b"audio")
 
     def test_provider_fallback(self):
+        """If Groq fails, Deepgram should be tried automatically."""
         import lambda_transcribe
         lambda_transcribe.provider_keys.cache_clear()
         response = Mock()
@@ -32,12 +37,14 @@ class TranscriptionTests(unittest.TestCase):
             self.assertEqual(post.call_count, 2)
 
     def test_no_keys(self):
+        """Without configured keys, return a safe empty result instead of crashing."""
         import lambda_transcribe
         lambda_transcribe.provider_keys.cache_clear()
         with patch.dict(os.environ, {}, clear=True):
             self.assertEqual(transcribe(b"audio"), {"text": "", "stt_source": "error"})
 
     def test_keys_are_loaded_from_parameter_store(self):
+        """AWS Parameter Store values should be used when local environment keys are absent."""
         import lambda_transcribe
         lambda_transcribe.provider_keys.cache_clear()
         client = Mock()

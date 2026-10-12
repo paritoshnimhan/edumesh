@@ -1,7 +1,9 @@
-# Minimal K3s deployment. Replace IMAGE_URI with the image pushed to Amazon ECR.
+# One easy Kubernetes file for the whole project. IMAGE_URI is replaced with the ECR image address during deployment.
+# A namespace is like a folder that keeps all EduMesh Kubernetes resources together.
 apiVersion: v1
 kind: Namespace
 metadata: {name: edumesh}
+# Shared non-secret settings. Keys are fetched safely from AWS Parameter Store, not placed here.
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -16,11 +18,13 @@ data:
   TRANSCRIBE_LAMBDA_FUNCTION: edumesh-transcribe
   GROQ_API_KEY_PARAMETER: /edumesh/groq-api-key
   DEEPGRAM_API_KEY_PARAMETER: /edumesh/deepgram-api-key
+# Every pod uses this account and the ECR secret to download the private container image.
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata: {name: edumesh-runtime, namespace: edumesh}
 imagePullSecrets: [{name: ecr-regcred}]
+# Gateway pod: the only service exposed to the browser through Traefik.
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -40,6 +44,7 @@ spec:
           envFrom: [{configMapRef: {name: edumesh-config}}]
           resources: {requests: {cpu: 50m, memory: 128Mi}, limits: {cpu: 250m, memory: 256Mi}}
           livenessProbe: {httpGet: {path: /live, port: 8000}}
+# ML pod: one independent copy of service.py with SUBJECT set to ML.
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -60,6 +65,7 @@ spec:
           ports: [{containerPort: 8000}]
           resources: {requests: {cpu: 50m, memory: 128Mi}, limits: {cpu: 250m, memory: 256Mi}}
           livenessProbe: {httpGet: {path: /health, port: 8000}}
+# DBMS pod: one independent copy of service.py with SUBJECT set to DBMS.
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -80,6 +86,7 @@ spec:
           ports: [{containerPort: 8000}]
           resources: {requests: {cpu: 50m, memory: 128Mi}, limits: {cpu: 250m, memory: 256Mi}}
           livenessProbe: {httpGet: {path: /health, port: 8000}}
+# Cloud pod: one independent copy of service.py with SUBJECT set to CLOUD.
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -100,6 +107,7 @@ spec:
           ports: [{containerPort: 8000}]
           resources: {requests: {cpu: 50m, memory: 128Mi}, limits: {cpu: 250m, memory: 256Mi}}
           livenessProbe: {httpGet: {path: /health, port: 8000}}
+# Gateway service gives Traefik a stable internal name for the public application.
 ---
 apiVersion: v1
 kind: Service
@@ -144,21 +152,25 @@ spec:
       resource:
         name: cpu
         target: {type: Utilization, averageUtilization: 70}
+# Internal service for the ML pod; it is not directly public.
 ---
 apiVersion: v1
 kind: Service
 metadata: {name: ml, namespace: edumesh}
 spec: {selector: {app: ml}, ports: [{port: 8000, targetPort: 8000}]}
+# Internal service for the DBMS pod; it is not directly public.
 ---
 apiVersion: v1
 kind: Service
 metadata: {name: dbms, namespace: edumesh}
 spec: {selector: {app: dbms}, ports: [{port: 8000, targetPort: 8000}]}
+# Internal service for the Cloud pod; it is not directly public.
 ---
 apiVersion: v1
 kind: Service
 metadata: {name: cloud, namespace: edumesh}
 spec: {selector: {app: cloud}, ports: [{port: 8000, targetPort: 8000}]}
+# Traefik Ingress receives public HTTP traffic and sends it only to the gateway service.
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

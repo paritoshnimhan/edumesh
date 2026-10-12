@@ -1,3 +1,4 @@
+# Keep API keys and local generated files out of Docker images.
 .env
 .env.*
 !.env.example

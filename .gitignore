@@ -1,3 +1,4 @@
+# Never upload real API keys or generated local files to GitHub.
 .env
 .env.*
 !.env.example

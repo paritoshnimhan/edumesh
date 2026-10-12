@@ -476,6 +476,7 @@
             });
         }
 
+        // Attach open/message/close handlers to one optional browser-to-browser cache connection.
         function setupPeerConnection(conn) {
             conn.on('open', () => {
                 const badge = document.getElementById("peer-status-badge");
@@ -590,6 +591,7 @@
         });
         window.addEventListener("resize", updateLines);
 
+        // Main send-button action: try browser cache, then peer cache, then the backend gateway.
         function onSubmit() {
             const question = questionInput.value.trim();
             if (!question) return;
@@ -650,6 +652,7 @@
             executeGatewayBidding(question);
         }
 
+        // Ask the gateway to collect scores from ML, DBMS, and Cloud services.
         function executeGatewayBidding(question) {
             const startTime = Date.now();
 
@@ -675,6 +678,7 @@
             });
         }
 
+        // Hide one animated SVG connector line before a new question starts.
         function resetPulse(id) {
             const line = document.getElementById(id);
             if (line) {
@@ -683,6 +687,7 @@
             }
         }
 
+        // Animate subject scores, highlight the winner, and then request its streamed answer.
         function runBiddingSequence(bidsData, question) {
             queryId = bidsData.query_id;
             const bidsMap = {};
@@ -821,6 +826,7 @@
         }
 
         // SVG lines positions logic
+        // Recalculate SVG connector coordinates after the page layout changes.
         function updateLines() {
             const gatewayBox = document.getElementById("gateway-box");
             const mlBox = document.getElementById("ml-box");
@@ -860,6 +866,7 @@
             updateWinnerLine();
         }
 
+        // Set one SVG line from a start point to an end point.
         function setLineCoords(id, x1, y1, x2, y2) {
             const element = document.getElementById(id);
             if (element) {
@@ -867,6 +874,7 @@
             }
         }
 
+        // Draw the final connector from the winning subject card to the answer panel.
         function updateWinnerLine() {
             const winnerLine = document.getElementById("winner-line");
             const answerPanel = document.getElementById("answer-panel");
@@ -889,6 +897,7 @@
             winnerLine.setAttribute("d", `M ${startX},${startY} L ${endX},${endY}`);
         }
 
+        // Measure an SVG line so its moving pulse can travel the correct distance.
         function getLineLength(id) {
             const line = document.getElementById(id);
             if (!line) return 0;
@@ -908,6 +917,7 @@
             }
         }
 
+        // Start the visible pulse animation on one connection line.
         function triggerPulse(lineId, length) {
             const line = document.getElementById(lineId);
             if (!line) return;
@@ -923,6 +933,7 @@
         }
 
         // Score Count Up easeOut
+        // Count a score smoothly from zero to its final value for the bidding animation.
         function animateScore(element, targetVal, duration) {
             let startTimestamp = null;
             function step(timestamp) {
@@ -941,6 +952,7 @@
         }
 
         // Render matched chips
+        // Show matched keywords as small chips; tier 1 terms get stronger styling.
         function renderChips(container, matched) {
             container.innerHTML = "";
             const t1 = matched.tier1 || [];
@@ -963,6 +975,7 @@
             });
         }
 
+        // Convert safe LaTeX from the AI into a textbook-style formula with KaTeX.
         function renderMath(latex, displayMode) {
             if (!window.katex) {
                 return displayMode
@@ -985,6 +998,7 @@
         }
 
         // Escapes answer text, then renders complete LaTeX expressions safely with KaTeX.
+        // Escape AI text first, then add only safe code and math HTML for display.
         function formatAnswer(text) {
             // 1. Escape HTML
             let esc = text

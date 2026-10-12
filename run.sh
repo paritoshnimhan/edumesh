@@ -1,6 +1,7 @@
 #!/bin/bash
+# Simple non-Docker launcher for a quick local demo. Docker Compose is preferred for normal use.
 
-# Resolve directory where run.sh is located
+# Always run from the project folder, even if this script is called from somewhere else.
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
@@ -33,12 +34,12 @@ else
     exit 1
 fi
 
-# Active background PIDs tracker
+# These variables remember the three background subject-service process IDs.
 ML_PID=""
 DBMS_PID=""
 CLOUD_PID=""
 
-# Cleanup hook
+# Stop all background services neatly when the user presses Ctrl+C.
 cleanup() {
     echo ""
     echo "[run.sh] Catching interrupt signal. Cleaning up background services..."
@@ -56,19 +57,19 @@ trap cleanup SIGINT SIGTERM
 
 echo "[run.sh] Starting EduMesh services using $PYTHON_CMD..."
 
-# 1. Start ML Service on 5001
+# 1. Start one copy of the reusable service file as the ML subject.
 export SUBJECT="ML"
 $PYTHON_CMD -m uvicorn service:app --host 127.0.0.1 --port 5001 > ml.log 2>&1 &
 ML_PID=$!
 echo "[run.sh] Started ML Service (PID: $ML_PID) on port 5001"
 
-# 2. Start DBMS Service on 5002
+# 2. Start another copy as the DBMS subject.
 export SUBJECT="DBMS"
 $PYTHON_CMD -m uvicorn service:app --host 127.0.0.1 --port 5002 > dbms.log 2>&1 &
 DBMS_PID=$!
 echo "[run.sh] Started DBMS Service (PID: $DBMS_PID) on port 5002"
 
-# 3. Start CLOUD Service on 5003
+# 3. Start another copy as the Cloud subject.
 export SUBJECT="CLOUD"
 $PYTHON_CMD -m uvicorn service:app --host 127.0.0.1 --port 5003 > cloud.log 2>&1 &
 CLOUD_PID=$!
@@ -77,6 +78,6 @@ echo "[run.sh] Started CLOUD Service (PID: $CLOUD_PID) on port 5003"
 # Wait a brief moment for services to bind
 sleep 2
 
-# 4. Start Gateway on port 5000 in foreground
+# 4. Keep the gateway in the foreground so Ctrl+C can stop the entire demo.
 echo "[run.sh] Starting Gateway on port 5000 in foreground..."
 $PYTHON_CMD -m uvicorn gateway:app --host 127.0.0.1 --port 5000

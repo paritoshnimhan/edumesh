@@ -1,4 +1,6 @@
-# Lexicons database for EduMesh (ML, DBMS, CLOUD)
+# Subject knowledge used during bidding. Tier 1 keywords are strongest, tier 3 are weakest.
+# Each subject also has blockers (words that mean an overlapping keyword belongs elsewhere)
+# and a system prompt that tells the AI how to answer in an exam-friendly style.
 
 LEXICONS = {
     "ML": {
